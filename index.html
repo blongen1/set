@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Set</title>
+        <link href="set.png" rel="shortcut icon">
+
+        <style>
+            html, body {
+                font-family: 'Segoe UI Light', 'Lucida Grande', Tahoma, sans-serif;
+                color: white;
+                margin: 0;
+                overflow: hidden;
+                background: #103010;
+                height: 100%;
+            }
+
+            a { color: #5ad; }
+            a:hover { color: #ace; }
+            p { margin: .3em 0 }
+            input { font-family: 'Segoe UI', 'Lucida Grande', Tahoma, sans-serif} 
+        </style>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.3/raphael-min.js" integrity="sha256-O6EpRuq49SlUZ3AbpU7wPyJ7rS1z6Qeyhhc9odsr2ig=" crossorigin="anonymous"></script>
+
+        <script>
+            window.AmericanEnglish = new function() {
+                var cardinals = [
+                    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+                    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen",
+                    "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+                    "", " thousand", " million", " billion", " trillion", " quadrillion", " quintillion", " sextillion", " septillion", " octillion"];
+
+                function cardinal(number, one) {
+                    number = Math.floor(parseFloat(number));
+
+                    if (number < 0) return "negative " + cardinal(-number);
+                    if (number == 1) return one || cardinals[1];
+                    if (number <= 20) return cardinals[number];
+
+                    var all = "";
+                    var orderIndex = 28;
+
+                    while (true)
+                    {
+                        var numPart = number % 1000;
+                        if (numPart != 0)
+                        {
+                            var part = "";
+                            var hundreds = Math.floor(numPart / 100);
+                            var tens = Math.floor(numPart / 10) % 10;
+                            var ones = numPart % 10;
+                            if (hundreds != 0)
+                            {
+                                part = cardinals[hundreds] + " hundred";
+                                if (tens != 0 || ones != 0) part += " ";
+                            }
+                            if (tens != 0)
+                            {
+                                part += cardinals[tens + 18];
+                                if (ones != 0) part += "-";
+                            }
+                            if (ones != 0) part += cardinals[ones];
+                            all = part + cardinals[orderIndex] + ", " + all;
+                        }
+
+                        number = Math.floor(number / 1000);
+                        if (number == 0) 
+                            return all.substring(0, all.length - 2);
+
+                        orderIndex++;
+                    }
+                }
+
+                return {
+                    cardinal: cardinal,
+                    capitalize: function (str) {
+                        str = str.toString();
+                        return str.charAt(0).toUpperCase() + str.slice(1);
+                    }
+                };
+            };
+
+            window.Set = {
+                CardColor: {
+                    Red: 0,
+                    Green: 1,
+                    Purple: 2
+                },
+                CardShape: {
+                    Round: 0,
+                    Diamond: 1,
+                    Squiggle: 2
+                },
+                CardNumber: {
+                    One: 0,
+                    Two: 1,
+                    Three: 2
+                },
+                CardFill: {
+                    Empty: 0,
+                    Striped: 1,
+                    Solid: 2
+                },
+
+                Card: function (color, shape, number, fill) {
+                    this.color = color;
+                    this.shape = shape;
+                    this.number = number;
+                    this.fill = fill;
+                },
+
+                isValid: function (card1, card2, card3) {
+                    return (((card1.color + card2.color + card3.color) % 3) == 0)
+                        && (((card1.shape + card2.shape + card3.shape) % 3) == 0)
+                        && (((card1.number + card2.number + card3.number) % 3) == 0)
+                        && (((card1.fill + card2.fill + card3.fill) % 3) == 0);
+                },
+
+                findSets: function (cards) {
+                    var sets = [];
+
+                    for (var a = 2; a < cards.length; a++)
+                        for (var b = 1; b < a; b++)
+                            for (var c = 0; c < b; c++)
+                                if (Set.isValid(cards[a], cards[b], cards[c]))
+                                    sets.push([cards[a], cards[b], cards[c]]);
+
+                    return sets;
+                },
+
+                Deck: function () {
+                    var deck = [];
+
+                    for (var color = 0; color < 3; color++)
+                        for (var shape = 0; shape < 3; shape++)
+                            for (var number = 0; number < 3; number++)
+                                for (var fill = 0; fill < 3; fill++)
+                                    deck.push(new Set.Card(color, shape, number, fill));
+                    return {
+                        drawCard: function () {
+                            var index = Math.floor(Math.random() * deck.length);
+                            var card = deck[index];
+                            deck.splice(index, 1);
+                            this.isEmpty = deck.length == 0;
+                            return card;
+                        },
+                        isEmpty: false
+                    };
+                }
+            };
+        </script>
+    </head>
+
+    <body>
+        <div id="container" style="width: 100%; height: 100%; text-align: center; font-size: 24pt"><noscript>This game requires JavaScript to run.</noscript></div>
+
+        <script>
+            (function () {
+                if (!document.createElementNS || !document.createElementNS('http://www.w3.org/2000/svg', 'svg').createSVGRect) {
+                    document.getElementById('container').innerHTML = '<p>This game requires a browser with Scalable Vector Graphics support.</p><p style="font-size: 18pt"><a href="http://caniuse.com/#feat=svg-html5" target="_blank">http://caniuse.com/#feat=svg-html5</a><br><span style="font-size: 10pt">Options: Internet Explorer 9.0+, Firefox 4.0+, Chrome 7.0+, Safari 5.1+, Opera 11.6+, Android 3.0+, <a href="http://caniuse.com/#feat=svg-html5" target="_blank">more</a></span></p>';
+                    return;
+                }
+
+                var svg, deck, selectedCards, mouseOverCard, startTime, gameOver, currentSets, setMarkerEls = [], displaySets;
+
+                window.startGame = function() {
+                    svg = Raphael(container, '100%', '100%');
+                    setupPatterns();
+
+                    deck = new Set.Deck();
+                    selectedCards = [];
+                    mouseOverCard;
+                    startTime = Date.now();
+                    gameOver = false;
+
+                    tableCardEls = [];
+                    fillTable();
+                }
+
+                startGame();
+
+                function findSets() {
+                    var cards = [];
+                    for (var i = 0; i < tableCardEls.length; i++) 
+                        cards.push(tableCardEls[i].card);
+
+                    return Set.findSets(cards);
+                }
+
+                function fillTable() {
+                    currentSets = [];
+                    displaySets = false;
+
+                    while ((tableCardEls.length % 3 != 0 || tableCardEls.length < 12 || (currentSets = findSets()).length == 0) && !deck.isEmpty)
+                        tableCardEls.push(setupCard(deck.drawCard()));
+
+                    if (currentSets.length != 0) {
+                        document.title = AmericanEnglish.capitalize(AmericanEnglish.cardinal(currentSets.length)) + (currentSets.length == 1 ? " set" : " sets");
+                        arrangeTable();                        
+                    } else {
+                        document.title = "Game over";
+                        gameOver = true;
+                        var timeMs = Date.now() - startTime;
+                        document.getElementById('container').innerHTML = '<p style="font-size: 72pt">game over</p><input type="submit" value="Play again" onclick="startGame()" style="font-size: 14pt; padding: .3em 1.5em"><p style="font-size: 18pt; margin-top: 1in">Time: ' + (timeMs >= 60000 ? Math.floor(timeMs / 60000) + ' min ' : '') + Math.floor(timeMs / 1000) % 60 + ' sec</p>';
+                    }   
+                }
+
+                function arrangeTable() {
+                    for (var i = 0; i < setMarkerEls.length; i++)
+                        setMarkerEls[i].remove();
+                    setMarkerEls = [];
+
+                    var x = 0, y = 0;
+                    var cheatColors = ['red', 'yellow', 'lime', 'blue', 'purple', 'orange', 'pink', 'black', 'gray', 'white'];
+
+                    for (var i = 0; i < tableCardEls.length; i++) {
+                        tableCardEls[i].move(.25 + x * 1.25, .25 + y * 1.8);
+
+                        tableCardEls[i].sets = [];
+                        for (var s = 0; s < currentSets.length; s++) 
+                            if (currentSets[s][0] == tableCardEls[i].card || currentSets[s][1] == tableCardEls[i].card || currentSets[s][2] == tableCardEls[i].card) {
+                                var cheatButton = (s < 4
+                                    ? svg.circle(.25 + x * 1.25 + 0.15 + s * 0.23, .25 + y * 1.8, .1)
+                                    : svg.circle(.25 + x * 1.25, .25 + y * 1.8 + 0.25 + (s - 4) * 0.25, .1)
+                                ).attr({ 'fill': cheatColors[s], 'stroke': 'black', 'stroke-width': .013 });                               
+                                cheatButton[0].style.display = 'none';
+
+                                (function newScope(set) {
+                                    tableCardEls[i].sets.push(set);
+
+                                    cheatButton.mousedown(function () {
+                                        clearCardSelection();
+                                        for (var i = 0; i < tableCardEls.length; i++) 
+                                            if (tableCardEls[i].sets.indexOf(set) != -1)
+                                                toggleCardSelection(tableCardEls[i]);
+                                    });
+
+                                    cheatButton.mouseover(function () {
+                                        for (var i = 0; i < tableCardEls.length; i++)
+                                            if (tableCardEls[i].sets.indexOf(set) != -1) {
+                                                tableCardEls[i].isHighlighted = true;
+                                                tableCardEls[i].updateBorder();
+                                            }
+                                    });
+
+                                    cheatButton.mouseout(function () {
+                                        for (var i = 0; i < tableCardEls.length; i++)
+                                            if (tableCardEls[i].sets.indexOf(set) != -1) {
+                                                tableCardEls[i].isHighlighted = false;
+                                                tableCardEls[i].updateBorder();
+                                            }
+                                    });
+                                })(currentSets[s]);
+
+                                setMarkerEls.push(cheatButton);
+                            }
+
+                        y++;
+                        if (y == 3) { y = 0; x++; }
+                    }
+
+                    svg.setViewBox(0, 0, .25 + Math.ceil(tableCardEls.length / 3) * 1.25, 5.65, true);
+                    window.updatePsychologicalSpacing();
+                }
+
+
+
+                function setupPatterns() {
+                    var ns = 'http://www.w3.org/2000/svg';
+
+                    var redlines = document.createElementNS(ns, 'pattern');
+                    redlines.setAttribute('id', 'redlines');
+                    redlines.setAttribute('width', '.04');
+                    redlines.setAttribute('height', '1');
+                    redlines.setAttribute('patternContentUnits', 'objectBoundingBox');
+                    svg.defs.appendChild(redlines);
+
+                    var redline = document.createElementNS(ns, 'line');
+                    redline.setAttribute('x1', '0');
+                    redline.setAttribute('y1', '0');
+                    redline.setAttribute('x2', '0');
+                    redline.setAttribute('y2', '1');
+                    redline.setAttribute('style', 'stroke: red; stroke-width: 0.01');
+                    redlines.appendChild(redline);
+
+
+                    var greenlines = document.createElementNS(ns, 'pattern');
+                    greenlines.setAttribute('id', 'greenlines');
+                    greenlines.setAttribute('width', '.04');
+                    greenlines.setAttribute('height', '1');
+                    greenlines.setAttribute('patternContentUnits', 'objectBoundingBox');
+                    svg.defs.appendChild(greenlines);
+
+                    var greenline = document.createElementNS(ns, 'line');
+                    greenline.setAttribute('x1', '0');
+                    greenline.setAttribute('y1', '0');
+                    greenline.setAttribute('x2', '0');
+                    greenline.setAttribute('y2', '1');
+                    greenline.setAttribute('style', 'stroke: green; stroke-width: 0.01');
+                    greenlines.appendChild(greenline);
+
+
+                    var purplelines = document.createElementNS(ns, 'pattern');
+                    purplelines.setAttribute('id', 'purplelines');
+                    purplelines.setAttribute('width', '.04');
+                    purplelines.setAttribute('height', '1');
+                    purplelines.setAttribute('patternContentUnits', 'objectBoundingBox');
+                    svg.defs.appendChild(purplelines);
+
+                    var purpleline = document.createElementNS(ns, 'line');
+                    purpleline.setAttribute('x1', '0');
+                    purpleline.setAttribute('y1', '0');
+                    purpleline.setAttribute('x2', '0');
+                    purpleline.setAttribute('y2', '1');
+                    purpleline.setAttribute('style', 'stroke: #600030; stroke-width: 0.01');
+                    purplelines.appendChild(purpleline);
+
+                    window.updatePsychologicalSpacing = function() {
+                        if (svg._viewBox == null) return;
+                        var scale = Math.min(window.innerWidth / svg._viewBox[2], window.innerHeight / svg._viewBox[3]);
+                        var spacing = .4 / Math.sqrt(scale);
+                        redlines.setAttribute('width', spacing);
+                        greenlines.setAttribute('width', spacing);
+                        purplelines.setAttribute('width', spacing);
+                    }
+
+                    window.onresize = updatePsychologicalSpacing;
+                    updatePsychologicalSpacing();
+                }
+
+                function clearCardSelection() {
+                    for (var i = 0; i < selectedCards.length; i++) {
+                        selectedCards[i].isSelected = false;
+                        selectedCards[i].updateBorder();
+                    }
+                    selectedCards = [];                        
+                }
+
+                function toggleCardSelection(cardEl) {
+                    cardEl.isSelected = !cardEl.isSelected;
+
+                    var lastMouseOverCard = mouseOverCard;
+                    mouseOverCard = cardEl;
+                    if (lastMouseOverCard != null) lastMouseOverCard.updateBorder();
+
+                    if (cardEl.isSelected) {
+                        selectedCards.push(cardEl);
+                        if (selectedCards.length == 3)
+                        {
+                            if (Set.isValid(selectedCards[0].card, selectedCards[1].card, selectedCards[2].card))
+                            {
+                                for (var i = 0; i < 3; i++) {
+                                    var tableIndex = tableCardEls.indexOf(selectedCards[i]);
+                                    if (tableCardEls.length <= 12 && !deck.isEmpty)
+                                        tableCardEls[tableIndex] = setupCard(deck.drawCard());
+                                    else
+                                        tableCardEls.splice(tableIndex, 1);
+                                    selectedCards[i].remove();
+                                }
+                                selectedCards = [];
+                                fillTable();
+                            }
+                            else
+                            {
+                                document.getElementsByTagName('body')[0].style.background = '#401000';
+                                var selectedCards_backup = selectedCards;
+                                selectedCards = [];
+                                setTimeout(function () {
+                                    document.getElementsByTagName('body')[0].style.background = '#103010';
+                                    for (var i = 0; i < 3; i++) {
+                                        selectedCards_backup[i].isSelected = false;
+                                        selectedCards_backup[i].updateBorder();
+                                    }
+                                }, 200);
+                            }
+                        }
+                    }
+                    else
+                        selectedCards.splice(selectedCards.indexOf(cardEl), 1);
+
+                    cardEl.updateBorder();
+                }
+
+
+
+                function setupCard(setCard) {
+                    var cardPath = 'M.05,0h.9a.05,.05 0 0 1 .05,.05v1.45a.05,.05 0 0 1 -.05,.05h-0.9a.05,.05 0 0 1 -.05,-.05v-1.45a.05,.05 0 0 1 .05,-.05';
+
+                    var cardEl = svg.path(cardPath)
+                        .attr({ fill: 'white', stroke: 'none' });
+
+                    var drawColor =
+                        setCard.color == Set.CardColor.Red ? 'red' :
+                        setCard.color == Set.CardColor.Green ? 'green' :
+                        '#600030';
+
+                    var shapePath;
+
+                    if (setCard.shape == Set.CardShape.Round)
+                        shapePath = 'm.675,-.165a.165,.165 0 0 1 0,.33h-.35a.165,.165 0 0 1 0,-.33z';
+                    else if (setCard.shape == Set.CardShape.Diamond)
+                        shapePath = 'm.14,0l.36,-.175l.36,.175l-.36,.175z';
+                    else
+                        shapePath = "m.23049937,0.15013531c-.00604386,-.00212223 -.00971551,-.00477001 -.01591543,-.01147447 -.01232081,-.01332557 -.01844649,-.02770226 -.02204022,-.05173007 -.00759016,-.05074563 .01325134,-.11335573 .05277862,-.15855357 .02967439,-.03393116 .06410701,-.05095119 .11659098,-.05762897 .01851808,-.00235667 .05182976,-.00228778 .06713545,.00014444 .01927665,.00305556 .03673936,.00671779 .04713754,.00988446 .00667786,.00203334 .0127843,.00388001 .01357001,.00410334 .00569788,.00162 .01104963,.00389667 .02945421,.01253002 .02206133,.0103489 .03314852,.01347891 .05318965,.01501891 .03623343,.00278445 .0870483,-.01463113 .13279273,-.04551118 .00457417,-.00308778 .01260902,-.00763557 .01785507,-.01010668 .00825737,-.0038889 .01107319,-.00448667 .02096576,-.00445001 .00971619,0 .0126028,.00065556 .01927799,.00410445 .05023356,.02598782 .0614728,.13351464 .02163097,.20694142 -.01336505,.02463115 -.03126468,.04569896 -.04916777,.05787009 -.01349154,.00917223 -.03931566,.02010558 -.05244875,.02220669 -.00274968,.00044445 -.00692783,.0011489 -.00928471,.00157556 -.01071984,.00194223 -.03827242,.00233667 -.05213697,.00074445 -.02839819,-.00325778 -.0733118,-.01532225 -.09681072,-.0260056 -.00492995,-.00224 -.0092497,-.00407445 -.00959948,-.00407445 -.00035011,0 -.00402976,-.00153444 -.00817767,-.00341111 -.01266203,-.00572779 -.03544729,-.01390447 -.04825126,-.01731558 -.03865367,-.0102978 -.07379218,-.00885002 -.1099258,.00453 -.01784462,.00660668 -.03156244,.01393447 -.05914916,.03159449 -.032241,.02064003 -.0440781,.0244256 -.05947104,.01901892z";
+
+                    if (setCard.number == Set.CardNumber.One)
+                        shapePath = 'M0,.775' + shapePath;
+                    else if (setCard.number == Set.CardNumber.Two)
+                        shapePath = 'M0,.555' + shapePath
+                            + 'M0,.995' + shapePath;
+                    else
+                        shapePath = 'M0,.335' + shapePath
+                            + 'M0,.775' + shapePath
+                            + 'M0,1.215' + shapePath;
+
+                    var childGlyph;
+
+                    if (setCard.fill == Set.CardFill.Solid)
+                        childGlyph = svg.path(shapePath).attr({ 'fill': drawColor, 'stroke': 'none' });
+                    else {
+                        childGlyph = svg.path(shapePath).attr({ 'stroke': drawColor, 'stroke-width': .021 });
+                        if (setCard.fill == Set.CardFill.Striped)
+                            childGlyph[0].setAttribute('fill',
+                                setCard.color == Set.CardColor.Red ? 'url(#redlines)' :
+                                setCard.color == Set.CardColor.Green ? 'url(#greenlines)' :
+                                'url(#purplelines)');
+                    }
+
+                    var selectionOverlay = svg.path(cardPath).attr({ 'fill-opacity': '0', 'fill': 'black', 'stroke': 'none', 'stroke-width': .04 });
+
+
+                    var r = {
+                        card: setCard,
+                        isSelected: false,
+                        isHighlighted: false,
+                        move: function (x, y) {
+                            cardEl.transform('t ' + x + ',' + y);
+                            childGlyph.transform('t ' + x + ',' + y);
+                            selectionOverlay.transform('t ' + x + ',' + y);
+                        },
+                        remove: function () {
+                            selectionOverlay.remove();
+                            childGlyph.remove();
+                            cardEl.remove();
+                        },
+                        updateBorder: function () {
+                            selectionOverlay.attr({
+                                'stroke': r.isHighlighted ? 'yellow' : (r.isSelected ? 'black' : 'none'),
+                                'stroke-dasharray': r.isSelected ? '-' : 'none',
+                                'fill-opacity': r.isSelected ? 0.375 : 0
+                            });
+                        }
+                    };
+                    selectionOverlay.mouseover(function () { mouseOverCard = r; r.isHighlighted = true; r.updateBorder(); });
+                    selectionOverlay.mouseout(function () { mouseOverCard = null; r.isHighlighted = false; r.updateBorder(); });
+                    selectionOverlay.mousedown(function (e) { e.preventDefault(); toggleCardSelection(r); });
+
+                    return r;
+                }
+
+                var seq = [112];
+                var seqIndex = 0;
+
+                window.onkeydown = function (e) {
+                    if (e.keyCode == 32) {
+                        if (mouseOverCard != null) // Space
+                            toggleCardSelection(mouseOverCard);
+                    } else if (e.keyCode == 116 && !gameOver) // F5 (accidental refresh)
+                        e.preventDefault();                
+
+                    if (e.keyCode == seq[seqIndex]) {
+                        e.preventDefault();
+                        seqIndex++;
+
+                        displaySets = !displaySets;
+                        if (seqIndex == seq.length) {
+                            for (var i = 0; i < setMarkerEls.length; i++) {
+                                setMarkerEls[i][0].style.display = displaySets ? '' : 'none';
+                            }
+                            seqIndex = 0;
+                        }
+                    } else
+                        seqIndex = 0;
+                }
+            })();
+        </script>
+
+        <div id="test" style="position: fixed; color: white; top: 0; left: 0"></div>
+    </body>
+</html>
