@@ -10,7 +10,7 @@
                 color: white;
                 margin: 0;
                 overflow: hidden;
-                background: #103010;
+                background: white;
                 height: 100%;
             }
 
@@ -83,8 +83,8 @@
             window.Set = {
                 CardColor: {
                     Red: 0,
-                    Green: 1,
-                    Purple: 2
+                    Blue: 1,
+                    Yellow: 2
                 },
                 CardShape: {
                     Round: 0,
@@ -280,48 +280,48 @@
                     redline.setAttribute('y1', '0');
                     redline.setAttribute('x2', '0');
                     redline.setAttribute('y2', '1');
-                    redline.setAttribute('style', 'stroke: red; stroke-width: 0.01');
+                    redline.setAttribute('style', 'stroke: red; stroke-width: 0.02');
                     redlines.appendChild(redline);
 
 
-                    var greenlines = document.createElementNS(ns, 'pattern');
-                    greenlines.setAttribute('id', 'greenlines');
-                    greenlines.setAttribute('width', '.04');
-                    greenlines.setAttribute('height', '1');
-                    greenlines.setAttribute('patternContentUnits', 'objectBoundingBox');
-                    svg.defs.appendChild(greenlines);
+                    var bluelines = document.createElementNS(ns, 'pattern');
+                    bluelines.setAttribute('id', 'bluelines');
+                    bluelines.setAttribute('width', '.04');
+                    bluelines.setAttribute('height', '1');
+                    bluelines.setAttribute('patternContentUnits', 'objectBoundingBox');
+                    svg.defs.appendChild(bluelines);
 
-                    var greenline = document.createElementNS(ns, 'line');
-                    greenline.setAttribute('x1', '0');
-                    greenline.setAttribute('y1', '0');
-                    greenline.setAttribute('x2', '0');
-                    greenline.setAttribute('y2', '1');
-                    greenline.setAttribute('style', 'stroke: green; stroke-width: 0.01');
-                    greenlines.appendChild(greenline);
+                    var blueline = document.createElementNS(ns, 'line');
+                    blueline.setAttribute('x1', '0');
+                    blueline.setAttribute('y1', '0');
+                    blueline.setAttribute('x2', '0');
+                    blueline.setAttribute('y2', '1');
+                    blueline.setAttribute('style', 'stroke: blue; stroke-width: 0.02');
+                    bluelines.appendChild(blueline);
 
 
-                    var purplelines = document.createElementNS(ns, 'pattern');
-                    purplelines.setAttribute('id', 'purplelines');
-                    purplelines.setAttribute('width', '.04');
-                    purplelines.setAttribute('height', '1');
-                    purplelines.setAttribute('patternContentUnits', 'objectBoundingBox');
-                    svg.defs.appendChild(purplelines);
+                    var yellowlines = document.createElementNS(ns, 'pattern');
+                    yellowlines.setAttribute('id', 'yellowlines');
+                    yellowlines.setAttribute('width', '.04');
+                    yellowlines.setAttribute('height', '1');
+                    yellowlines.setAttribute('patternContentUnits', 'objectBoundingBox');
+                    svg.defs.appendChild(yellowlines);
 
-                    var purpleline = document.createElementNS(ns, 'line');
-                    purpleline.setAttribute('x1', '0');
-                    purpleline.setAttribute('y1', '0');
-                    purpleline.setAttribute('x2', '0');
-                    purpleline.setAttribute('y2', '1');
-                    purpleline.setAttribute('style', 'stroke: #600030; stroke-width: 0.01');
-                    purplelines.appendChild(purpleline);
+                    var yellowline = document.createElementNS(ns, 'line');
+                    yellowline.setAttribute('x1', '0');
+                    yellowline.setAttribute('y1', '0');
+                    yellowline.setAttribute('x2', '0');
+                    yellowline.setAttribute('y2', '1');
+                    yellowline.setAttribute('style', 'stroke: yellow; stroke-width: 0.02');
+                    yellowlines.appendChild(yellowline);
 
                     window.updatePsychologicalSpacing = function() {
                         if (svg._viewBox == null) return;
                         var scale = Math.min(window.innerWidth / svg._viewBox[2], window.innerHeight / svg._viewBox[3]);
                         var spacing = .4 / Math.sqrt(scale);
                         redlines.setAttribute('width', spacing);
-                        greenlines.setAttribute('width', spacing);
-                        purplelines.setAttribute('width', spacing);
+                        bluelines.setAttribute('width', spacing);
+                        yellowlines.setAttribute('width', spacing);
                     }
 
                     window.onresize = updatePsychologicalSpacing;
@@ -349,6 +349,10 @@
                         {
                             if (Set.isValid(selectedCards[0].card, selectedCards[1].card, selectedCards[2].card))
                             {
+								document.getElementsByTagName('body')[0].style.background = '#75ff85';
+								setTimeout(function () {
+                                    document.getElementsByTagName('body')[0].style.background = 'white';
+                                }, 200);
                                 for (var i = 0; i < 3; i++) {
                                     var tableIndex = tableCardEls.indexOf(selectedCards[i]);
                                     if (tableCardEls.length <= 12 && !deck.isEmpty)
@@ -362,11 +366,11 @@
                             }
                             else
                             {
-                                document.getElementsByTagName('body')[0].style.background = '#401000';
+                                document.getElementsByTagName('body')[0].style.background = '#ff3838';
                                 var selectedCards_backup = selectedCards;
                                 selectedCards = [];
                                 setTimeout(function () {
-                                    document.getElementsByTagName('body')[0].style.background = '#103010';
+                                    document.getElementsByTagName('body')[0].style.background = 'white';
                                     for (var i = 0; i < 3; i++) {
                                         selectedCards_backup[i].isSelected = false;
                                         selectedCards_backup[i].updateBorder();
@@ -387,12 +391,12 @@
                     var cardPath = 'M.05,0h.9a.05,.05 0 0 1 .05,.05v1.45a.05,.05 0 0 1 -.05,.05h-0.9a.05,.05 0 0 1 -.05,-.05v-1.45a.05,.05 0 0 1 .05,-.05';
 
                     var cardEl = svg.path(cardPath)
-                        .attr({ fill: 'white', stroke: 'none' });
+                        .attr({ fill: '#cccccc', stroke: 'none' });
 
                     var drawColor =
                         setCard.color == Set.CardColor.Red ? 'red' :
-                        setCard.color == Set.CardColor.Green ? 'green' :
-                        '#600030';
+                        setCard.color == Set.CardColor.Blue ? 'blue' :
+                        'yellow';
 
                     var shapePath;
 
@@ -422,8 +426,8 @@
                         if (setCard.fill == Set.CardFill.Striped)
                             childGlyph[0].setAttribute('fill',
                                 setCard.color == Set.CardColor.Red ? 'url(#redlines)' :
-                                setCard.color == Set.CardColor.Green ? 'url(#greenlines)' :
-                                'url(#purplelines)');
+                                setCard.color == Set.CardColor.Blue ? 'url(#bluelines)' :
+                                'url(#yellowlines)');
                     }
 
                     var selectionOverlay = svg.path(cardPath).attr({ 'fill-opacity': '0', 'fill': 'black', 'stroke': 'none', 'stroke-width': .04 });
@@ -445,9 +449,9 @@
                         },
                         updateBorder: function () {
                             selectionOverlay.attr({
-                                'stroke': r.isHighlighted ? 'yellow' : (r.isSelected ? 'black' : 'none'),
+                                'stroke': r.isHighlighted ? '#6e6e6e' : (r.isSelected ? 'black' : 'none'),
                                 'stroke-dasharray': r.isSelected ? '-' : 'none',
-                                'fill-opacity': r.isSelected ? 0.375 : 0
+                                'fill-opacity': r.isSelected ? 0.175 : 0
                             });
                         }
                     };
